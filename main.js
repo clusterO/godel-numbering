@@ -1,95 +1,89 @@
-symbols = {
-  "~": 1,
-  v: 2,
-  ">": 3,
-  E: 4,
-  "=": 5,
-  0: 6,
-  s: 7,
-  "(": 8,
-  ")": 9,
-  ",": 10,
-  "+": 11,
-  "*": 12,
-  x: 13,
-  y: 17,
-  z: 19,
-};
-symbolsInvs = {
-  1: "~",
-  2: "v",
-  3: ">",
-  4: "E",
-  5: "=",
-  6: "0",
-  7: "s",
-  8: "(",
-  9: ")",
-  10: ",",
-  11: "+",
-  12: "*",
-  13: "x",
-  17: "y",
-  19: "z",
-};
+import { symbols, symbols_inverse } from "./symbols.js";
 
-isPrime = (number) => {
+function isPrime(number) {
   if (number <= 1) return false;
   if (number === 2) return true;
 
-  for (i = 2; i < number; i++) if (number % i === 0) return false;
+  const sqrt = Math.floor(Math.sqrt(number));
+  for (let i = 2; i <= sqrt; i++) {
+    if (number % i === 0) return false;
+  }
 
   return true;
-};
+}
 
 function* nextPrime() {
-  let i = 1;
+  let i = 2;
   while (true) {
     if (isPrime(i)) yield i;
-    ++i;
+    i++;
   }
 }
 
-godelNumbering = (numbers) => {
+function godelNumbering(numbers) {
   if (numbers.length === 0) return 0;
 
-  let primes = [];
-  let np = nextPrime();
-  while (primes.length < numbers.length) primes.push(np.next().value);
+  const primes = [];
+  const np = nextPrime();
 
-  let encoding = Math.pow(2, numbers[0]);
-  if (numbers.length > 1)
-    for (j = 1; j < numbers.length; j++)
-      encoding = encoding * Math.pow(primes[j], numbers[j]);
+  let encoding = 1;
+  for (const num of numbers) {
+    const prime = np.next().value;
+    primes.push(prime);
+    encoding *= Math.pow(prime, num);
+  }
 
   return encoding;
-};
+}
 
-createGodelNumber = (expression) => {
-  let symbolizedExpression = [];
-  for (i in expression) symbolizedExpression.push(symbols[expression[i]]);
+function createGodelNumber(expression, symbols) {
+  const symbolizedExpression = [];
+  for (const char of expression) {
+    const symbol = symbols[char];
+    if (symbol !== undefined) {
+      symbolizedExpression.push(symbol);
+    }
+  }
   return godelNumbering(symbolizedExpression);
-};
+}
 
-findExpression = (godelNumber) => {
-  let np = nextPrime();
+const symbolsCount = Object.keys(symbols).length;
+function findExpression(godelNumber, symbolsInvs) {
+  const np = nextPrime();
   let expression = "";
 
-  for (i = 0; i < 10; i++) {
-    prime = np.next().value;
+  for (let i = 0; i < symbolsCount; i++) {
+    const prime = np.next().value;
 
-    if (godelNumber == 1) break;
+    if (godelNumber === 1) break;
 
-    counter = 0;
-    while (godelNumber % prime == 0) {
-      godelNumber = godelNumber / prime;
-      ++counter;
+    let counter = 0;
+    while (godelNumber % prime === 0) {
+      godelNumber /= prime;
+      counter++;
     }
 
-    if (counter !== 0) expression += symbolsInvs[counter];
+    if (counter !== 0) {
+      const symbol = symbolsInvs[counter];
+      if (symbol) {
+        expression += symbol;
+      } else {
+        console.error(`Invalid Godel number: ${godelNumber}`);
+        break;
+      }
+    }
   }
 
   return expression;
-};
+}
 
-// console.log(findExpression(createGodelNumber("~x")));
+// Usage
+
+const expression = "~x";
+const godelNumber = createGodelNumber(expression, symbols);
+console.log(`Godel Number for "${expression}": ${godelNumber}`);
+
+const retrievedExpression = findExpression(godelNumber, symbols_inverse);
+console.log(
+  `Retrieved Expression for Godel Number ${godelNumber}: ${retrievedExpression}`
+);
